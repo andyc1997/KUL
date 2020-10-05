@@ -1,2 +1,2 @@
 # KUL
-A repository for projects in KUL
+A repository for project of Multivariate Statistics in KU Leuven
