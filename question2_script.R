@@ -1,6 +1,8 @@
 # Exploratory factor analysis (EFA)
 rm(list=ls())
 library(dplyr)
+library(psych)
+library(GPArotation)
 
 # Working directory -------------------------------------------------------
 course.path <- 'C:\\Users\\user\\Desktop\\KUL - Mstat\\Multivariate Statistics\\Assignment-1' # Modify if necessary
@@ -34,6 +36,43 @@ legend('topright', legend = c('Real Data', 'Kaiser\'s rule'), col = c('blue', 'r
        lty = c(1, 2))
 
 # Factor analysis (No rotation) -------------------------------------------
-cov_mat <- cov(data_just)
-fit_fa <- factanal(covmat = , n.obs = nrow(data_just), )
+fit_fa <- factanal(data_just, factors = 3, rotation = 'none')
+print(fit_fa, cutoff = 0)
 
+# Residual correlations
+cor_mat <- cor(data_just)
+res_cor_mat <- cor_mat - fit_fa$loadings %*% t(fit_fa$loadings) - diag(fit_fa$uniquenesses)
+n <-  sum(ifelse(abs(res_cor_mat) > 0.05, 1, 0))/2
+cat('Percentage of residual correlations below 0.05:', 2 * n/(nrow(cor_mat)^2 - nrow(cor_mat)))
+
+# Factor analysis (Varimax rotation) --------------------------------------
+fit_fa_varimax <- factanal(data_just, factors = 3,
+                           rotation = 'varimax', scores = 'regression')
+print(fit_fa_varimax, cutoff = 0)
+
+# Factor analysis (Oblique rotation) --------------------------------------
+fit_fa_obliq <- fa(data_just, nfactors = 3, rotate = 'oblimin', fm = 'mle',
+                    scores = 'regression')
+print(fit_fa_obliq, cutoff = 0)
+
+# Residual correlations
+res_cor_mat <- cor_mat - fit_fa_obliq$loadings %*% fit_fa_obliq$Phi %*% t(fit_fa_obliq$loadings) - diag(fit_fa_obliq$uniquenesses)
+n <-  sum(ifelse(abs(res_cor_mat) > 0.05, 1, 0))/2
+cat('Percentage of residual correlations below 0.05:', 2 * n/(nrow(cor_mat)^2 - nrow(cor_mat)))
+
+# Factor scores and Boxplots -----------------------------------------------------------
+fa_score <- fit_fa_varimax$scores %>% as.data.frame
+fa_score$country <- wvs$country
+
+par(mar = c(5, 9, 2, 2))
+boxplot(Factor1 ~ country, data = fa_score, horizontal = TRUE, las = 1, cex.y = 0.2,
+        col = 'lightblue1', xlab = 'Factor Score', ylab = '',
+        main = 'Distribution of Factor1 Scores by Country')
+
+boxplot(Factor2 ~ country, data = fa_score, horizontal = TRUE, las = 1, cex.y = 0.2,
+        col = 'lightpink', xlab = 'Factor Score', ylab = '',
+        main = 'Distribution of Factor2 Scores by Country')
+
+boxplot(Factor3 ~ country, data = fa_score, horizontal = TRUE, las = 1, cex.y = 0.2,
+        col = 'lightgreen', xlab = 'Factor Score', ylab = '',
+        main = 'Distribution of Factor3 Scores by Country')
