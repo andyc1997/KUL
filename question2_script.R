@@ -32,8 +32,23 @@ axis(side = 1, at = xtick, labels = TRUE)
 
 # Kaiser's rule
 abline(h = 1, col = 'red', lty = 2)
-legend('topright', legend = c('Real Data', 'Kaiser\'s rule'), col = c('blue', 'red'),
-       lty = c(1, 2))
+
+# Horn's procedure
+# Bootstrap from raw data
+n_row <- dim(data_just)[1]
+n_col <- dim(data_just)[2]
+for (j in 1:100){
+  boot_mat <- matrix(data = rep(0, n_row*n_col), nrow = n_row)
+  for (i in 1:n_col){
+    samp_mat <- sample(1:n_row, size = n_row, replace = TRUE)
+    boot_mat[, i] <- data_just[samp_mat, i]
+  }
+  eigenvalue_boot <- prcomp(boot_mat)$sdev ^ 2
+  lines(xtick, eigenvalue_boot, type = 'l', col = 'green', lty = 2)
+}
+legend('topright', legend = c('Real Data', 'Kaiser\'s rule', 'Bootstrapped Data'), 
+       col = c('blue', 'red', 'green'), lty = c(1, 2, 2))
+
 
 # Factor analysis (No rotation) -------------------------------------------
 fit_fa <- factanal(data_just, factors = 3, rotation = 'none')
@@ -43,7 +58,7 @@ print(fit_fa, cutoff = 0)
 cor_mat <- cor(data_just)
 res_cor_mat <- cor_mat - fit_fa$loadings %*% t(fit_fa$loadings) - diag(fit_fa$uniquenesses)
 n <-  sum(ifelse(abs(res_cor_mat) > 0.05, 1, 0))/2
-cat('Percentage of residual correlations below 0.05:', 2 * n/(nrow(cor_mat)^2 - nrow(cor_mat)))
+cat('Percentage of nonredundant residuals:', 2 * n/(nrow(cor_mat)^2 - nrow(cor_mat)))
 
 # Factor analysis (Varimax rotation) --------------------------------------
 fit_fa_varimax <- factanal(data_just, factors = 3,
@@ -58,7 +73,7 @@ print(fit_fa_obliq, cutoff = 0)
 # Residual correlations
 res_cor_mat <- cor_mat - fit_fa_obliq$loadings %*% fit_fa_obliq$Phi %*% t(fit_fa_obliq$loadings) - diag(fit_fa_obliq$uniquenesses)
 n <-  sum(ifelse(abs(res_cor_mat) > 0.05, 1, 0))/2
-cat('Percentage of residual correlations below 0.05:', 2 * n/(nrow(cor_mat)^2 - nrow(cor_mat)))
+cat('Percentage of nonredundant residuals:', 2 * n/(nrow(cor_mat)^2 - nrow(cor_mat)))
 
 # Factor scores and Boxplots -----------------------------------------------------------
 fa_score <- fit_fa_varimax$scores %>% as.data.frame
