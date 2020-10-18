@@ -59,7 +59,7 @@ D.root <- fit_pca$sdev %>% diag
 loading_mat <- V.inv_root %*% Z %*% D.root
 loading_mat
 
-plot(loading_mat[, 1:2], xlab = 'PC 1', ylab = 'PC 2')
+plot(loading_mat[, 1:2], xlab = 'PC 1', ylab = 'PC 2', main = 'Plot of Loading Matrix')
 pointLabel(loading_mat[, 1], loading_mat[, 2], colnames(data_value)[-1], col = 'red')
 
 # Biplot -----------------------------------------------------------------
