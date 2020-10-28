@@ -38,7 +38,6 @@ axis(side = 1, at = xtick, labels = TRUE)
 abline(h = 1, col = 'green', lty = 2) # Kaiser's rule
 
 # Horn's procedure
-# Bootstrap from raw data
 n_row <- dim(data_value)[1]
 n_col <- dim(data_value)[2] - 1
 for (j in 1:10){
