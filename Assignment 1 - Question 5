@@ -1,0 +1,12 @@
+#Question5
+#standardize data set wvs(except "country")
+sdwvs<-scale(wvs[,1:32])
+#select variables x,y
+ind1<- which(wvs$country=="Netherlands")
+ind2<- which(wvs$country=="Malaysia")
+x<- wvs[c(ind1,ind2),11:32]
+x<- x[,-c(6:19)]
+y<-wvs[c(ind1,ind2),16:29]
+#conduct canonical correlation analysis
+cancor.out<- cancor(x,y)
+summary(cancor.out)
