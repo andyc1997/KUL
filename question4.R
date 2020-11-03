@@ -2,7 +2,6 @@
 rm(list=ls())
 library(dplyr)
 library(lavaan)
-library(sem)
 
 # Working directory -------------------------------------------------------
 setwd("~/multivariate")
