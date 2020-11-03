@@ -11,7 +11,7 @@ setwd("~/multivariate")
 load("~/multivariate/wvs(3).Rdata")
 # Select data ---------------------------------------------
 data_sem <- wvs %>% filter(country %in% c('Netherlands', 'Malaysia')) %>% 
-  select(starts_with('R_')) %>% as.data.frame
+    select(starts_with('R_')| starts_with('J_') ) %>% as.data.frame
 # Structural equation model  ----------------------------------------
 
 # latent variable definitions
