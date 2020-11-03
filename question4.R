@@ -31,11 +31,18 @@ sem1 <- '
  religion =~ marriage
  religion =~ violent'
 
-fitsem1 <- sem(sem1, data = wvs)
-summary(fitsem1, fit.measures = TRUE)
-standardizedSolution(fitsem1)
+ fitsem1 <- sem(sem1, data = data_sem)
+
 fitmeasures(fitsem1,c("chisq","df","pvalue","cfi","tli","rmsea","srmr"))
-modificationIndices(fitsem1)                
+
+summary(fitsem1, fit.measures = TRUE)
+
+
+standardizedSolution(fitsem1) # Standardized solution & Reliability
+
+fit_sem1.mi <- modificationIndices(fitsem1) # modification indices (mi)
+
+fit_sem1.mi[order(fit_sem1.mi$mi, decreasing = TRUE),] # rank relationship by decreasing mi        
                 
                 
                 
