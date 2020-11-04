@@ -16,7 +16,8 @@ f.std <- function(x) (x - mean(x))/sd(x)
 v_name <- wvs %>% select(starts_with(c('R_', 'J_', 'CR_'))) %>% colnames
 data_value <- wvs %>% filter(country %in% c('Netherlands', 'Malaysia')) %>%
   select(all_of(v_name)) %>% apply(MARGIN = 2, FUN = f.std) %>% as.data.frame
-
+country_lbl <- wvs %>% filter(country %in% c('Netherlands', 'Malaysia')) %>%
+  select(country)
 # Conduct CCA -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 x <- data_value %>% select(starts_with(c('R_', 'CR_')))
 y <- data_value %>% select(starts_with('J_'))
@@ -45,7 +46,11 @@ lines(redu$Ycan.redun %>% cumsum, col = 'green')
 
 # Visualization of CCA ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 par(mfrow = c(1, 1))
-i <- 1 # Which canonical variates pair want to visualize
-plot(fit_cca$scores$X[, i], fit_cca$scores$Y[, i], las = 1,
-     xlab = paste('u', i), ylab = paste('t', i), main = paste('Canonical Plot - ', i))
+i <- 2 # Which canonical variates pair want to visualize, Modify here
 
+# Plot command, don't modify this
+plot(fit_cca$scores$X[country_lbl == 'Malaysia', i], fit_cca$scores$Y[country_lbl == 'Malaysia', i], 
+     las = 1, col = 'blue',
+     xlab = paste('u', i), ylab = paste('t', i), main = paste('Canonical Plot - ', i))
+points(fit_cca$scores$X[country_lbl == 'Netherlands', i], fit_cca$scores$Y[country_lbl == 'Netherlands', i], 
+       las = 1, col = 'red')
