@@ -54,3 +54,5 @@ plot(fit_cca$scores$X[country_lbl == 'Malaysia', i], fit_cca$scores$Y[country_lb
      xlab = paste('u', i), ylab = paste('t', i), main = paste('Canonical Plot - ', i))
 points(fit_cca$scores$X[country_lbl == 'Netherlands', i], fit_cca$scores$Y[country_lbl == 'Netherlands', i], 
        las = 1, col = 'red')
+legend('bottomright', legend = c('Malaysia', 'Netherlands'), col = c('blue', 'red'),
+       pch = 1)
