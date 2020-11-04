@@ -1,14 +1,15 @@
 # Question 5: Canonical correlation analysis
 rm(list=ls())
+install.packages("dplyr")
 library(dplyr)
 library(candisc)
 
 # Working directory -------------------------------------------------------
-course.path <- 'C:\\Users\\user\\Desktop\\KUL - Mstat\\Multivariate Statistics\\Assignment-1' # Modify if necessary
+course.path <- 'D:\\Download\\KUL\\Multivariate\\1-assignment' # Modify if necessary
 setwd(course.path)
 
 # Load data ---------------------------------------------------------------
-file.name <- 'wvs(1).Rdata'
+file.name <- 'wvs(3).Rdata'
 load(file.name)
 
 # Select and standardize data ---------------------------------------------
