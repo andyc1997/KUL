@@ -106,6 +106,7 @@ cfa_multigroup_relation <- 'religion =~ R_attend_religious_services +  R_pray  +
 #Differences in two countries
 fit_sem_config <- sem(cfa_multigroup_relation, data = data_cfa_multigroup, 
                       group = 'country')
+fitmeasures(fit_sem_config,c("chisq","df","pvalue","cfi","tli","rmsea","srmr"))
 summary(fit_sem_config, fit.measures = TRUE)
 std_sol <- standardizedSolution(fit_sem_config)
 std_sol[std_sol$group==1,] # Malaysia
