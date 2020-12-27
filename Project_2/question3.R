@@ -49,6 +49,8 @@ for (i in 1:6){
 colnames(df_measures) <- c('model', 'k', 'BIC', 'ICL')
 
 shopping_hddc <- hddc(shopping_std, K = 6, model = 'AJBQD', algo = 'SEM')
+
+
 # 1. GMM ------------------------------------------------------------------
 shopping_gmm <- Mclust(shopping_std)
 summary(shopping_gmm)
@@ -60,6 +62,8 @@ plot(shopping_gmm, what = 'BIC')
 shopping_pca <- princomp(shopping_std)
 shopping_main_pc <- as.data.frame(shopping_pca$scores[, 1:2]) 
 colnames(shopping_main_pc) <- c('PC1', 'PC2')
+summary(shopping_pca)
+shopping_pca$loadings[, 1:6]
 
 #
 #
@@ -85,7 +89,7 @@ df_hddc <- data.frame('group'= shopping_hddc$class, shopping_main_pc)
 shopping_hddc_mu <- shopping_hddc$mu
 colnames(shopping_hddc_mu) <- colnames(shopping)
 df_proj_hddc_center <- 1:6 %>% 
-  data.frame(predict(shopping_pca, shopping_hddc_mu)[, 1:2]) # Projected Kmeans center
+  data.frame(predict(shopping_pca, shopping_hddc_mu)[, 1:2]) # Projected HDDC center
 colnames(df_proj_hddc_center) <- c('group', 'PC1', 'PC2')
 
 # PC plot
