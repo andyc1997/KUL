@@ -19,8 +19,11 @@ dwvs_candisc_lm <- lm(cbind(F_rights, F_steal, F_crime, F_religion, F_realizesel
 dwvs_candisc <- candisc(dwvs_candisc_lm)
 
 summary(dwvs_candisc)
-plot(dwvs_candisc)
-
+print(dwvs_candisc) # Print test for canonical discriminant analysis
+plot(dwvs_candisc, scale = 4.5, cex = 0.5, var.cex = 1.2, var.col = 'blue', ellipse = TRUE,
+     main = 'Observations in Discriminant space') # Observations in discriminant space
+legend('bottomleft', legend = levels(dwvs$country), pch = 1:3,
+       col = c('red', 'green', 'blue'))
 
 # 2. LDA with empirical prior --------------------------------------------------
 dwvs_lda.train <- lda(country ~., data = dwvs, CV = FALSE) # LDA for training error
@@ -147,6 +150,8 @@ points(error_qda_eqprior, col = color.code[2], pch = pch.code[2], cex = cex.size
 axis(1, at = 1:2, labels = c('Training Error', 'LOOCV Error'))
 legend('topleft', legend = c('LDA', 'QDA', 'Empirical Prior', 'Equal Prior'), 
        col = c('red', 'blue', 'black', 'black'), pch = c(19, 19, 3, 2))
+
+data.frame(error_lda_emprior, error_lda_eqprior, error_qda_emprior, error_qda_eqprior)
 # Best model for LDA: LDA with empirical prior
 # Best model for QDA: QDA with equal prior
 
@@ -186,11 +191,19 @@ text(60, error_lda_emprior[1], labels = 'LDA', pos = 3, col = 'brown')
 
 legend('right', legend = c('Training Error', 'LOOCV Error'), col = color.code, lty = 1)
 
+# Summary of Training and LOOCV errors for all chosen models
+colnames(error_df_knn) <- c('error.train', 'error.loocv')
+rbind('error_lda_emprior' = error_lda_emprior, 
+      'error_qda_eqprior' = error_qda_eqprior, 
+      error_df_hdda['AkjBkQkDk', ],
+      'error_kNN=9' = error_df_knn[9, ])
+
 # 3. Multinomial Logistic Regression -----------------------------------------------
 dwvs_multinom <- multinom(country ~., family = 'multinomial', data = dwvs, 
                           maxit = 1000, hess = TRUE)
 summary(dwvs_multinom) # Also get the standard error
-
+devs_sum_multinom <- summary(dwvs_multinom)
+exp(devs_sum_multinom$coefficients)
 
 # 3. Multinomial as a classifier ------------------------------------------
 pred.train <- predict(dwvs_multinom, dwvs) # Training error for multinomial logistic regression
@@ -205,4 +218,5 @@ for (i in 1:n){
   error.loocv[i] <- ifelse(predict(dwvs_multinom.loocv, dwvs[i, ]) == dwvs$country[i], 0, 1)
 }
 error.loocv <- mean(error.loocv)
+
 
