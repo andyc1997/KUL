@@ -8,9 +8,7 @@ load("dissim.Rdata")
 
 sim<-(confusion+t(confusion))/2
 dissim<-100-sim
-for (i in 1:36){dissim[i,i]<-0} #why do this?
-# Wai Chun: It is because MDS takes distance matrix (representing dissimilarity) in a high dimension as input and return a set of coordinates in a low dimension as output.
-# It is also called 'low dimensional embedding'. So, the distance with itself (located in the diagonal of dist matrix) should be 0.
+for (i in 1:36){dissim[i,i]<-0} 
 
 # 1. MDS with 2 dim different transformations --------------------------------------------
 transformations.code <- c('ratio', 'interval', 'ordinal', 'mspline')
@@ -23,8 +21,7 @@ m2<-smacofSym(delta=dissim, ndim=2, type=transformations.code[2], init="torgerso
 m3<-smacofSym(delta=dissim, ndim=2, type=transformations.code[3], init="torgerson")
 ##Monotone spline 
 m4<-smacofSym(delta=dissim, ndim=2 ,type=transformations.code[4],spline.degree =4 ,
-              spline.intKnots = 4, init="torgerson") #why degree and intKnots equal to 4
-# Wai Chun: Just convention. It is because if the spline has too high degree -> Runge phenonmen. Too less --> Bad fit.
+              spline.intKnots = 4, init="torgerson") 
 
 #stress-1 values
 signal_stress <- c(m1$stress, m2$stress, m3$stress, m4$stress)
