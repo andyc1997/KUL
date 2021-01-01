@@ -18,7 +18,6 @@ return(err2)
 }
 
 
-
 # Working directory -------------------------------------------------------
 setwd("~/multivariate")
 # Load data ---------------------------------------------------------------
@@ -30,6 +29,9 @@ trainsize<-2500
 train = sample(nrow(spamdata), trainsize)
 data.train<-spamdata[train,]
 data.test<-spamdata[-train,]
+
+n <- dim(data.train)[1]
+p <- dim(data.train)[2]
 
 # complex classification tree  ----------------------------------------
 
@@ -48,7 +50,7 @@ par(cex=1.4)
 plot(cv.out$size,cv.out$dev,type='b')
 
 #prune the tree
-prune.mod=prune.tree(tree.mod,best=13)
+prune.mod=prune.tree(tree.mod,best=12)
 plot(prune.mod)
 text(prune.mod,pretty=0)
 
@@ -69,6 +71,68 @@ err(data.train$spam,pred.train[,2],cutoff=0.5)
 pred.test<-predict(prune.mod,newdata=data.test)
 err(data.test$spam,pred.test[,2],cutoff=0.5)
 #0.094
+
+#linear discriminant analysis-------------------------------------------
+
+amountofspam <- sum(data.train$spam)
+amountofemail <- n - amountofspam
+
+amountofemail_prior <- amountofemail / n
+amountofspam_prior <- amountofspam / n
+
+# Account for different prior probabilities and equal classification costs
+
+lda.out<-lda(spam~.,prior=c(amountofemail_prior,amountofspam_prior),data=data.train)
+pred.train<-predict(lda.out,prior=c(amountofemail_prior,amountofspam_prior),data.train)
+pred.train$class[1:100]
+pred.train$posterior[1:5,]
+#observed versus predicted class labels
+tab<-table(data.train$spam,pred.train$class)
+print(tab)
+#classification error
+1-sum(diag(tab))/sum(tab)
+
+#sensitivity 
+sens1 <- 757 /(219 + 757)
+spec1 <- 1462 / (1462 + 62)
+
+# Account for different prior probabilities and unequal classification costs: 
+
+classif<-ifelse(1*pred.train$posterior[,1]>=10*pred.train$posterior[,2],1,2)
+tab<-table(data.train$spam,classif)
+print(tab)
+#classification error
+1-sum(diag(tab))/sum(tab)
+
+#sensitivity 
+sens2 <- 935 /(41 + 935)
+spec2 <- 1066 / (1066 + 458)
+
+# classify test sample using model
+# calibrated on training sample
+pred.test<-predict(lda.out,data.test)
+
+#classification test sample after accounting for prior probabilities
+tab<-table(data.test$spam,pred.test$class)
+print(tab)
+1-sum(diag(tab))/sum(tab)
+
+# classify test sample using model
+
+# calibrated on training sample
+pred.test<-predict(lda.out,books2[,5:6])
+
+#classification test sample after accounting for prior probabilities
+tab<-table(books2$buyer,pred.test$class)
+print(tab)
+1-sum(diag(tab))/sum(tab)
+
+
+#classification of test sample when accounting for asymmetric classification cost
+classif2<-ifelse((pred.test$posterior[,1]*1)>=(pred.test$posterior[,2]*10),1,2)
+tab<-table(data.test$spam,classif2)
+print(tab)
+1-sum(diag(tab))/sum(tab)
 
 
 
