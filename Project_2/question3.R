@@ -40,18 +40,19 @@ shopping_kmeans <- kmeans(shopping_std, init_guess)
 df_measures <- data.frame() 
 for (i in 1:6){
   # Compare all number of cluster
-  set.seed(989898)
+  set.seed(780) # Best seed
   shopping_hddc <- hddc(shopping_std, K = i, model = 'ALL',
                         algo = 'SEM') # Compare all possible models given the number of cluster
   df_measures <- df_measures %>% rbind(c(shopping_hddc$model, shopping_hddc$K, 
                                          shopping_hddc$BIC, shopping_hddc$ICL))
 }
 colnames(df_measures) <- c('model', 'k', 'BIC', 'ICL')
-
+set.seed(780) # Best seed
 shopping_hddc <- hddc(shopping_std, K = 6, model = 'AJBQD', algo = 'SEM')
 
 
 # 1. GMM ------------------------------------------------------------------
+set.seed(989898)
 shopping_gmm <- Mclust(shopping_std)
 summary(shopping_gmm)
 plot(shopping_gmm, what = 'BIC')
@@ -160,27 +161,51 @@ out_kmeans <- shopping_kmeans$cluster
 table(pred_kmeans, out_kmeans)[c(5, 3, 4, 2, 1, 6),]
 adjustedRandIndex(pred_kmeans, out_kmeans)
 
-# Validation analysis: HDDC
+# Validation analysis: HDDC, k = 6
 
 # Training data + Predicted labels
+set.seed(780) # Best seed 
 shopping_hddc <- hddc(shopping.train, K = 6, model = 'AJBQD', algo = 'SEM')
 pred_hddc <- predict(shopping_hddc, shopping.valid)$class
 
 # Validation data
+set.seed(780) # Best seed
 shopping_hddc <- hddc(shopping.valid, K = 6, model = 'AJBQD', algo = 'SEM')
 out_hddc <- shopping_hddc$class
 
 # Adjusted Rand Index
-table(pred_hddc, out_hddc)[c(5, 3, 1, 2, 4, 6),]
+# Compared to init = 'random', the default setting init = 'kmeans' yields a stabler result
+table(pred_hddc, out_hddc)[c(6, 5, 1, 2, 3, 4),]
+adjustedRandIndex(pred_hddc, out_hddc)
+
+# Validation analysis: HDDC, k = 4
+# Observation: If we use the set.seed(8) again in the previous code for the whole data,
+# the optimal model is no longer K = 4 but K = 5 or K = 6 based on BIC.
+# Hence, it's not desirable to use k = 4.
+# Training data + Predicted labels
+set.seed(8) # Best seed
+shopping_hddc <- hddc(shopping.train, K = 4, model = 'ABQD', algo = 'SEM')
+pred_hddc <- predict(shopping_hddc, shopping.valid)$class
+
+# Validation data
+set.seed(8) # Best seed
+shopping_hddc <- hddc(shopping.valid, K = 4, model = 'ABQD', algo = 'SEM')
+out_hddc <- shopping_hddc$class
+
+# Adjusted Rand Index
+# Compared to init = 'random', the default setting init = 'kmeans' yields a stabler result
+table(pred_hddc, out_hddc)[c(1, 2, 3, 4),]
 adjustedRandIndex(pred_hddc, out_hddc)
 
 # Validation analysis: GMM
 
 # Training data + Predicted labels
+set.seed(989898) # GMM results are the same for different seeds
 shopping_gmm <- Mclust(shopping.train, G = 4, model = 'VVE')
 pred_gmm <- predict(shopping_gmm, shopping.valid)$classification
 
 # Validation data
+set.seed(989898) # GMM results are the same for different seeds
 shopping_gmm <- Mclust(shopping.valid, G = 4, model = 'VVE')
 out_gmm <- shopping_gmm$classification
 
