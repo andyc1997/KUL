@@ -1,6 +1,9 @@
 ## Other classification methods
 library(MASS) 
 library(tree)
+library(randomForest)
+library(gbm)
+
 
 
 
@@ -127,6 +130,8 @@ tab<-table(books2$buyer,pred.test$class)
 print(tab)
 1-sum(diag(tab))/sum(tab)
 
+sens3 <- 651 /(651 + 186)
+spec3 <- 1210 / (1210 + 54)
 
 #classification of test sample when accounting for asymmetric classification cost
 classif2<-ifelse((pred.test$posterior[,1]*1)>=(pred.test$posterior[,2]*10),1,2)
@@ -134,6 +139,50 @@ tab<-table(data.test$spam,classif2)
 print(tab)
 1-sum(diag(tab))/sum(tab)
 
+sens4 <- 801 /(801 + 36)
+spec4 <- 909 / (909 + 355)
+
+#bagging-----------------------------------------------------------------
+
+set.seed(2500)
+bag.mod=randomForest(as.factor(spam)~.,data=data.train,mtry=57,ntree=5000,importance=TRUE)
+bag.mod
+
+pred.train<-predict(bag.mod,newdata=data.train)
+err2(data.train$spam,pred.train)
+
+pred.test<-predict(bag.mod,newdata=data.test)
+err2(data.test$spam,pred.test)
+
+sens5 <- 881 /(881 + 95)
+spec5 <- 1465 / (1465 + 59)
+#random Forests---------------------------------------------------------------
+
+set.seed(2500)
+rf.mod=randomForest(as.factor(spam)~.,data=data.train,mtry=20,ntree=5000,importance=TRUE)
+rf.mod
+
+pred.train<-predict(rf.mod,newdata=data.train)
+err2(data.train$spam,pred.train)
+
+pred.test<-predict(rf.mod,newdata=data.test)
+err2(data.test$spam,pred.test)
+
+sens6 <- 887 /(887 + 89)
+spec6 <- 1471 / (1471 + 53)
+
+#Boosting-----------------------------------------------------------------------
+
+set.seed(2501)
+
+boost.mod=gbm(spam~.,data=data.train,distribution="bernoulli",n.trees=10000,interaction.depth=4,shrinkage=0.001,cv.folds=5)
+gbm.perf(boost.mod,method="cv")
+legend("topright",c("train error","CV error"),col=c("green","black"),lty=c(1,1))
+
+pred.train<-predict(boost.mod,n.trees=10000,newdata=data.train,type="response")
+err(data.train$spam,pred.train,cutoff=0.5)
+pred.test<-predict(boost.mod,n.trees=10000,newdata=data.test,type="response")
+err(data.test$spam,pred.test,cutoff=0.5)
 
 
 
