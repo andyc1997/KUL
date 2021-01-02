@@ -94,8 +94,8 @@ get_metrics <- function(tab){
   # Order of factor = 0, 1
   # Order of table = row: predicted, column: true
   error <- 1 - sum(diag(tab))/sum(tab)
-  sensitivity <- tab[2,2]/sum(tab[,2])
-  false_positive <- 1-tab[1,1]/sum(tab[,1])
+  sensitivity <- tab[2,2]/sum(tab[2,])
+  false_positive <- tab[1,1]/sum(tab[1,])
   return(c(error, sensitivity, false_positive))
 }
 
