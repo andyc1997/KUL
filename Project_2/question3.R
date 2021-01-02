@@ -35,24 +35,47 @@ init_guess <- shopping_std %>% aggregate(by = list('group' = lbl), FUN = mean) %
 # Kmeans
 shopping_kmeans <- kmeans(shopping_std, init_guess)
 
+# Random initialization method with different seeds for HDDC -----------------------
+# Warning! This section of code can take a long time to run #
+max_iter <- 100
+set.seed(1)
+seed_mat <- floor(runif(max_iter, 0, 1000)) # Randomly generate some seeds between 0 to 1000
+bic_mat <- matrix(rep(0, 6*max_iter), nrow = 6) # Contain BIC for different numbers of cluster and seed
+
+for (i in 1:max_iter){
+  # The outer iteration loops through different seeds
+  for (k in 1:6){
+    # the inner iteration loops through different number of cluster
+    set.seed(seed_mat[i])
+    shopping_hddc <- hddc(shopping_std, K = k, model = 'ALL',
+                          algo = 'SEM', init = 'random', d_select = 'BIC')
+    bic_mat[k, i] <- shopping_hddc$BIC # Store BIC
+  }
+}
+bic_df <- as.data.frame(bic_mat)
 
 # 1. HDDC -----------------------------------------------------------------
-df_measures <- data.frame() 
+idx_df <- bic_df %>% apply(MARGIN = 1, FUN = which.max)
+seed_chosen <- seed_mat[idx_df]
+df_measures <- data.frame()
+
 for (i in 1:6){
-  # Compare all number of cluster
-  set.seed(780) # Best seed
+  # Rerun the model with the best seed
+  set.seed(seed_chosen[i]) # Best seed for each cluster number
   shopping_hddc <- hddc(shopping_std, K = i, model = 'ALL',
-                        algo = 'SEM') # Compare all possible models given the number of cluster
+                        algo = 'SEM', init = 'random', d_select = 'BIC') 
+  # Compare all possible models given the number of cluster
   df_measures <- df_measures %>% rbind(c(shopping_hddc$model, shopping_hddc$K, 
-                                         shopping_hddc$BIC, shopping_hddc$ICL))
+                                         shopping_hddc$BIC, shopping_hddc$ICL, 
+                                         seed_chosen[i]))
 }
-colnames(df_measures) <- c('model', 'k', 'BIC', 'ICL')
-set.seed(780) # Best seed
-shopping_hddc <- hddc(shopping_std, K = 6, model = 'AJBQD', algo = 'SEM')
+colnames(df_measures) <- c('model', 'k', 'BIC', 'ICL', 'seed')
+set.seed(794) # Best seed
+shopping_hddc <- hddc(shopping_std, K = 6, model = 'ALL', algo = 'SEM',
+                      init = 'random', d_select = 'BIC')
 
 
 # 1. GMM ------------------------------------------------------------------
-set.seed(989898) # Solution are the same with different seeds
 shopping_gmm <- Mclust(shopping_std)
 summary(shopping_gmm)
 plot(shopping_gmm, what = 'BIC')
@@ -162,50 +185,93 @@ table(pred_kmeans, out_kmeans)[c(5, 3, 4, 2, 1, 6),]
 adjustedRandIndex(pred_kmeans, out_kmeans) # ARI = 0.7035
 
 # Validation analysis: HDDC, k = 6
-
 # Training data + Predicted labels
-set.seed(780) # Best seed 
-shopping_hddc <- hddc(shopping.train, K = 6, model = 'AJBQD', algo = 'SEM')
+set.seed(1997)
+seed_mat <- floor(runif(max_iter, 0, 1000)) # Randomly generate some seeds between 0 to 1000
+bic_mat <- rep(0, max_iter) # Contain BIC for different seeds given 6 clusters
+
+for (i in 1:max_iter){
+  set.seed(seed_mat[i])
+  shopping_hddc <- hddc(shopping.train, K = 6, model = 'AJBQD', algo = 'SEM',
+                        init = 'random', d_select = 'BIC')
+  bic_mat[i] <- shopping_hddc$BIC
+}
+
+idx <- which.max(bic_mat) # Get index
+set.seed(seed_mat[idx]) # Best seed
+shopping_hddc <- hddc(shopping.train, K = 6, model = 'AJBQD', algo = 'SEM',
+                      init = 'random', d_select = 'BIC')
 pred_hddc <- predict(shopping_hddc, shopping.valid)$class
 
 # Validation data
-set.seed(780) # Best seed
-shopping_hddc <- hddc(shopping.valid, K = 6, model = 'AJBQD', algo = 'SEM')
+set.seed(seed_mat[idx]) # Best seed
+shopping_hddc <- hddc(shopping.valid, K = 6, model = 'AJBQD', algo = 'SEM',
+                      init = 'random', d_select = 'BIC')
 out_hddc <- shopping_hddc$class
 
 # Adjusted Rand Index
 # Compared to init = 'random', the default setting init = 'kmeans' yields a stabler result
-table(pred_hddc, out_hddc)[c(6, 5, 1, 2, 3, 4),]
-adjustedRandIndex(pred_hddc, out_hddc) # ARI = 0.7805
-
-# Validation analysis: HDDC, k = 4
-# Training data + Predicted labels
-set.seed(780) # Best seed
-shopping_hddc <- hddc(shopping.train, K = 4, model = 'ABQD', algo = 'SEM')
-pred_hddc <- predict(shopping_hddc, shopping.valid)$class
-
-# Validation data
-set.seed(780) # Best seed
-shopping_hddc <- hddc(shopping.valid, K = 4, model = 'ABQD', algo = 'SEM')
-out_hddc <- shopping_hddc$class
-
-# Adjusted Rand Index
-# Compared to init = 'random', the default setting init = 'kmeans' yields a stabler result
-table(pred_hddc, out_hddc)[c(1, 2, 3, 4),]
-adjustedRandIndex(pred_hddc, out_hddc) # ARI = 0.4941
+table(pred_hddc, out_hddc)[c(4, 2, 3, 5, 1, 6),]
+adjustedRandIndex(pred_hddc, out_hddc) # ARI = 0.1361
 
 # Validation analysis: GMM
 
 # Training data + Predicted labels
-set.seed(989898) # GMM results are the same for different seeds
 shopping_gmm <- Mclust(shopping.train, G = 4, model = 'VVE')
 pred_gmm <- predict(shopping_gmm, shopping.valid)$classification
 
 # Validation data
-set.seed(989898) # GMM results are the same for different seeds
 shopping_gmm <- Mclust(shopping.valid, G = 4, model = 'VVE')
 out_gmm <- shopping_gmm$classification
 
 # Adjusted Rand Index
 table(pred_gmm, out_gmm)[c(2, 4, 3, 1),]
 adjustedRandIndex(pred_gmm, out_gmm) # ARI = 0.3834
+
+
+# Appendix. HDDC with kmeans initialization -------------------------------
+df_measures <- data.frame()
+
+for (i in 1:6){
+  # Rerun the model with the best seed
+  set.seed(780) 
+  shopping_hddc <- hddc(shopping_std, K = i, model = 'ALL',
+                        algo = 'SEM', init = 'kmeans') 
+  # Compare all possible models given the number of cluster
+  df_measures <- df_measures %>% rbind(c(shopping_hddc$model, shopping_hddc$K, 
+                                         shopping_hddc$BIC, shopping_hddc$ICL))
+}
+colnames(df_measures) <- c('model', 'k', 'BIC', 'ICL')
+set.seed(780)
+shopping_hddc <- hddc(shopping_std, K = 6, model = 'ALL', algo = 'SEM',
+                      init = 'kmeans')
+
+# Training data + Predicted labels
+set.seed(1997)
+seed_mat <- floor(runif(max_iter, 0, 1000)) # Randomly generate some seeds between 0 to 1000
+bic_mat <- rep(0, max_iter) # Contain BIC for different seeds given 6 clusters
+
+for (i in 1:max_iter){
+  set.seed(seed_mat[i])
+  shopping_hddc <- hddc(shopping.train, K = 6, model = 'AJBQD', algo = 'SEM',
+                        init = 'kmeans')
+  bic_mat[i] <- shopping_hddc$BIC
+}
+
+idx <- which.max(bic_mat) # Get index
+set.seed(seed_mat[idx]) # Best seed
+shopping_hddc <- hddc(shopping.train, K = 6, model = 'AJBQD', algo = 'SEM',
+                      init = 'kmeans')
+pred_hddc <- predict(shopping_hddc, shopping.valid)$class
+
+# Validation data
+set.seed(seed_mat[idx]) # Best seed
+shopping_hddc <- hddc(shopping.valid, K = 6, model = 'AJBQD', algo = 'SEM',
+                      init = 'kmeans')
+out_hddc <- shopping_hddc$class
+
+# Adjusted Rand Index
+# Compared to init = 'random', the default setting init = 'kmeans' yields a stabler result
+table(pred_hddc, out_hddc)[c(1, 4, 2, 5, 6, 3),]
+adjustedRandIndex(pred_hddc, out_hddc) # ARI = 0.5815
+
