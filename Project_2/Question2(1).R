@@ -50,7 +50,7 @@ title('Classification tree before pruning')
 
 #use cross-validation to select tuning parameter for pruning the tree
 set.seed(209)
-cv.out = cv.tree(tree.mod, K=11)
+cv.out = cv.tree(tree.mod, K=11, FUN=prune.misclass) # Pruned by misclassification rate
 par(cex=1.4)
 plot(cv.out$size, cv.out$dev, type='b', col='red',
      xlab='Tree Complexity', ylab='Crosss-Validation Error',
@@ -84,6 +84,136 @@ err.prun.test <- err(data.test$spam, pred.test[,2], cutoff=0.5)
 data.frame(error.train=c(err.full.train, err.prun.train),
            error.test=c(err.full.test, err.prun.test),
            row.names=c('Full Tree', 'Pruned Tree'))
+
+#Rewrite =======================================================================
+# Default is unequal prior probabilities for these models
+
+# LDA: Shorter code for prior probabilities and classification costs
+get_metrics <- function(tab){
+  # Error, sensitivity, false postiive rate
+  # Order of factor = 0, 1
+  # Order of table = row: predicted, column: true
+  error <- 1 - sum(diag(tab))/sum(tab)
+  sensitivity <- tab[2,2]/sum(tab[,2])
+  false_positive <- 1-tab[1,1]/sum(tab[,1])
+  return(c(error, sensitivity, false_positive))
+}
+
+summary.lda <- function(penalty){
+  lda.out <- lda(spam~., data = data.train)
+  # Training error
+  lda.pred <- predict(lda.out, newdata = data.train)
+  class.lbl <- ifelse(lda.pred$posterior[,1] >= lda.pred$posterior[,2]*penalty,
+                      0, 1)
+  confus.mat <- table(class.lbl, data.train$spam)
+  metrics.train <- get_metrics(confus.mat)
+  print(confus.mat)
+  # Testing error
+  lda.pred <- predict(lda.out, newdata = data.test)
+  class.lbl <- ifelse(lda.pred$posterior[,1] >= lda.pred$posterior[,2]*penalty,
+                      0, 1)
+  confus.mat <- table(class.lbl, data.test$spam) # Order: Observed, True
+  metrics.test <- get_metrics(confus.mat)
+  print(confus.mat)
+  # Return results 
+  return(data.frame(train = metrics.train, test = metrics.test,
+                       row.names = c('error', 'sens', 'fp')))
+}
+
+# LDA: Different prior + Equal cost
+(sum.lda.equal <- summary.lda(1))
+# LDA: Different prior + Unequal cost
+(sum.lda.unequal <- summary.lda(10))
+
+# Bagging
+summary.bagging <- function(penalty){
+  set.seed(78)
+  bag.out <- randomForest(as.factor(spam)~., data = data.train,
+                          mtry = p - 1, ntree = 2500) 
+  # Training error
+  bag.pred <- predict(bag.out, newdata = data.train, type = 'prob')
+  class.lbl <- ifelse(bag.pred[,1] >= bag.pred[,2]*penalty,
+                      0, 1)
+  confus.mat <- table(class.lbl, data.train$spam)
+  metrics.train <- get_metrics(confus.mat)
+  print(confus.mat)
+  # Testing error
+  bag.pred <- predict(bag.out, newdata = data.test, type = 'prob')
+  class.lbl <- ifelse(bag.pred[,1] >= bag.pred[,2]*penalty,
+                      0, 1)
+  confus.mat <- table(class.lbl, data.test$spam) # Order: Observed, True
+  metrics.test <- get_metrics(confus.mat)
+  print(confus.mat)
+  # Return results 
+  return(data.frame(train = metrics.train, test = metrics.test,
+                    row.names = c('error', 'sens', 'fp')))
+}
+
+# BAG: Different prior + Equal cost
+(sum.bag.equal <- summary.bagging(em_prior, 1))
+# BAG: Different prior + Unequal cost
+(sum.bag.unequal <- summary.bagging(em_prior, 10))
+
+# Random forest
+summary.rf <- function(penalty){
+  set.seed(78)
+  bag.out <- randomForest(as.factor(spam)~., data = data.train,
+                          mtry = floor((p - 1)/3), ntree = 2500) 
+  # Training error
+  bag.pred <- predict(bag.out, newdata = data.train, type = 'prob')
+  class.lbl <- ifelse(bag.pred[,1] >= bag.pred[,2]*penalty,
+                      0, 1)
+  confus.mat <- table(class.lbl, data.train$spam)
+  metrics.train <- get_metrics(confus.mat)
+  print(confus.mat)
+  # Testing error
+  bag.pred <- predict(bag.out, newdata = data.test, type = 'prob')
+  class.lbl <- ifelse(bag.pred[,1] >= bag.pred[,2]*penalty,
+                      0, 1)
+  confus.mat <- table(class.lbl, data.test$spam) # Order: Observed, True
+  metrics.test <- get_metrics(confus.mat)
+  print(confus.mat)
+  # Return results 
+  return(data.frame(train = metrics.train, test = metrics.test,
+                    row.names = c('error', 'sens', 'fp')))
+}
+
+# RF: Different prior + Equal cost
+(sum.rf.equal <- summary.rf(1))
+# RF: Different prior + Unequal cost
+(sum.rf.unequal <- summary.rf(10))
+
+# Gradient Boosting Method
+summary.gbm <- function(penalty){
+  set.seed(78)
+  gbm.out <- gbm(spam~., distribution = 'bernoulli',
+                          data = data.train, n.tree = 5000, cv.folds = 5,
+                          interaction.depth = 3, shrinkage = 0.005) 
+  # Training error
+  gbm.pred <- predict(gbm.out, newdata = data.train, type = 'response', n.trees = 1000)
+  class.lbl <- ifelse((1 - gbm.pred) >= gbm.pred*penalty,
+                      0, 1)
+  confus.mat <- table(class.lbl, data.train$spam)
+  metrics.train <- get_metrics(confus.mat)
+  print(confus.mat)
+  # Testing error
+  gbm.pred <- predict(gbm.out, newdata = data.test, type = 'response', n.trees = 1000)
+  class.lbl <- ifelse((1 - gbm.pred) >= gbm.pred*penalty,
+                      0, 1)
+  confus.mat <- table(class.lbl, data.test$spam) # Order: Observed, True
+  metrics.test <- get_metrics(confus.mat)
+  print(confus.mat)
+  # Return results 
+  return(data.frame(train = metrics.train, test = metrics.test,
+                    row.names = c('error', 'sens', 'fp')))
+}
+
+# GBM Different prior + Equal cost
+(sum.gbm.equal <- summary.gbm(1))
+# GBM: Different prior + Unequal cost
+(sum.gbm.unequal <- summary.gbm(10))
+
+#=======================================================================
 
 #linear discriminant analysis-------------------------------------------
 
