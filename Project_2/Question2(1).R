@@ -39,41 +39,51 @@ p <- dim(data.train)[2]
 # complex classification tree  ----------------------------------------
 
 #grow complex tree using deviance as criterion
-tree.mod=tree(as.factor(spam)~.,data.train,control=tree.control(nobs=2500,minsize=2,mincut=1),split="deviance")
+tree.mod = tree(as.factor(spam)~., data.train,control=
+                  tree.control(nobs=2500, minsize=2, mincut=1), split="deviance")
 summary(tree.mod)
 
-#plot tree
+#plot tree (before pruning, full size)
 plot(tree.mod)
-text(tree.mod,pretty=0,cex=1.4)
+text(tree.mod, pretty=0, cex=0.7, col='blue')
+title('Classification tree before pruning')
 
 #use cross-validation to select tuning parameter for pruning the tree
 set.seed(209)
-cv.out=cv.tree(tree.mod,K=3)
+cv.out = cv.tree(tree.mod, K=11)
 par(cex=1.4)
-plot(cv.out$size,cv.out$dev,type='b')
+plot(cv.out$size, cv.out$dev, type='b', col='red',
+     xlab='Tree Complexity', ylab='Crosss-Validation Error',
+     main='Cross-Validation Error vs Tree Complexity') # CV error becomes flatten when tree complexity is 11
 
-#prune the tree
-prune.mod=prune.tree(tree.mod,best=12)
+#plot tree (prune the tree)
+prune.mod = prune.tree(tree.mod, best=11)  
 plot(prune.mod)
-text(prune.mod,pretty=0)
+text(prune.mod, pretty=0, cex=0.7, col='blue')
+title('Classification tree after pruning')
 
 #make predictions on training and test set using the unpruned tree
-pred.train<-predict(tree.mod,newdata=data.train)
-err(data.train$spam,pred.train[,2],cutoff=0.5)
+pred.train <- predict(tree.mod, newdata=data.train)
+err.full.train <- err(data.train$spam, pred.train[,2], cutoff=0.5)
 #0.078
 
-pred.test<-predict(tree.mod,newdata=data.test)
-err(data.test$spam,pred.test[,2],cutoff=0.5)
-#0.094
+pred.test <- predict(tree.mod,newdata=data.test)
+err.full.test <- err(data.test$spam, pred.test[,2], cutoff=0.5)
+#0.09424084
 
 #make predictions on training and test set using the pruned tree
-pred.train<-predict(prune.mod,newdata=data.train)
-err(data.train$spam,pred.train[,2],cutoff=0.5)
-#0.078
+pred.train <- predict(prune.mod, newdata=data.train)
+err.prun.train <- err(data.train$spam, pred.train[,2], cutoff=0.5)
+#0.0836 
 
-pred.test<-predict(prune.mod,newdata=data.test)
-err(data.test$spam,pred.test[,2],cutoff=0.5)
-#0.094
+pred.test <- predict(prune.mod, newdata=data.test)
+err.prun.test <- err(data.test$spam, pred.test[,2], cutoff=0.5)
+#0.09852451
+
+# Summarize the above errors in the dataframe
+data.frame(error.train=c(err.full.train, err.prun.train),
+           error.test=c(err.full.test, err.prun.test),
+           row.names=c('Full Tree', 'Pruned Tree'))
 
 #linear discriminant analysis-------------------------------------------
 
